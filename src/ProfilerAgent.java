@@ -2,6 +2,10 @@ package src;
 
 import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.TickerBehaviour;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
 import java.util.Scanner;
 import src.User;
 import src.Menu;
@@ -15,10 +19,29 @@ public class ProfilerAgent extends MuseumAgent {
 	protected void setup() {
 		menu = new Menu(this);
 		System.out.println("Profiler Agent " + getAID().getName() + " successfully initialized");
+
+		DFAgentDescription dfd = new DFAgentDescription(); 
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription(); 
+		sd.setType("profiler");
+		sd.setName("JADE-profiler");
+		dfd.addServices(sd);
+		try {
+			DFService.register(this, dfd); 
+		} catch (FIPAException fe) { 
+			fe.printStackTrace();
+		}
+		
 		menu.display();
 	}
 
 	protected void takeDown() {
+		try {
+			DFService.deregister(this); 
+		} catch (FIPAException fe) {
+     		fe.printStackTrace();
+		}
+
 		System.out.println("Profiler agent " + getAID().getName() + " terminating.");
 	}
 
@@ -44,20 +67,45 @@ public class ProfilerAgent extends MuseumAgent {
 	}
 
 	protected void startTour() {
-		addBehaviour(new CommunicationBehaviour(this));
-	}
+		addBehaviour(new OneShotBehaviour(this) {
+			public void action() {
+				DFAgentDescription template = new DFAgentDescription(); 
+				ServiceDescription sd = new ServiceDescription(); 
+				sd.setType("tourguide");
+				template.addServices(sd);
+				try {
+					DFAgentDescription[] result = DFService.search(myAgent, template);
 
-	protected void obtainInfo() {
-		final int maxTicks = 5;
-		addBehaviour(new TickerBehaviour(this, 5000) {
-			protected void onTick() {
-				if (this.getTickCount() < maxTicks)
-					System.out.println("Retrieving interesting information...");
-				else {
-					this.stop();
+					if (result.length > 0) {
+						Scanner sc = new Scanner(System.in);
+
+						System.out.println("AVAILABLE TOURS");
+						for (int i = 0; i < result.length; i++) {
+							System.out.printf("%d) %s\n", i + 1, result[i].getName());
+						}
+
+						System.out.print("Choose the tour: ");
+						int choice = sc.nextInt();
+
+						try {
+							System.out.printf("You have chosen tour %s.\n", result[choice - 1]);
+						} catch (ArrayIndexOutOfBoundsException e) {
+							System.out.println("The chosen tour does not exist");
+						}
+						
+					} else {
+						System.out.println("No tours available");
+					}
+
 					menu.display();
+				} catch (FIPAException fe) {
+		            fe.printStackTrace();
 				}
 			}
 		});
+	}
+
+	protected void obtainInfo() {
+		addBehaviour(new CommunicationBehaviour(this));
 	}
 }

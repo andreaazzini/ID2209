@@ -2,9 +2,14 @@ package src;
 
 import java.util.List;
 import java.util.ArrayList;
+import jade.core.AID;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.ParallelBehaviour;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
 import jade.proto.states.MsgReceiver;
 import jade.lang.acl.ACLMessage;
 import src.MuseumAgent;
@@ -13,9 +18,25 @@ import src.ParallelTourGuideBehaviour;
 
 public class TourGuideAgent extends MuseumAgent {
 	private List<Artifact> artifacts;
+	private AID[] curators;
+	private int curatorNumber;
 
 	protected void setup() {
 		artifacts = new ArrayList<Artifact>();
+		curatorNumber = 0;
+
+		DFAgentDescription dfd = new DFAgentDescription(); 
+		dfd.setName(getAID());
+		ServiceDescription sd = new ServiceDescription(); 
+		sd.setType("tourguide");
+		sd.setName("JADE-tourguide");
+		dfd.addServices(sd);
+		try {
+			DFService.register(this, dfd); 
+		} catch (FIPAException fe) { 
+			fe.printStackTrace();
+		}
+
 		System.out.println("Tour Guide Agent " + getAID().getName() + " successfully initialized");
 		ParallelBehaviour pb = new ParallelTourGuideBehaviour();
 		pb.addSubBehaviour(getBuildTourBehaviour());
@@ -24,6 +45,12 @@ public class TourGuideAgent extends MuseumAgent {
 	}
 
 	protected void takeDown() {
+		try {
+			DFService.deregister(this); 
+		} catch (FIPAException fe) {
+     		fe.printStackTrace();
+		}
+
 		System.out.println("Tour Guide agent " + getAID().getName() + " terminating.");
 	}
 
@@ -34,7 +61,28 @@ public class TourGuideAgent extends MuseumAgent {
 			}
 
 			public void action() {
-				// Retrieve information and modify artifacts consequently
+				DFAgentDescription template = new DFAgentDescription(); 
+				ServiceDescription sd = new ServiceDescription(); 
+				sd.setType("curator");
+				template.addServices(sd);
+				try {
+					DFAgentDescription[] result = DFService.search(myAgent, template);
+
+					int foundCurators = result.length;
+					if (foundCurators != curatorNumber) {
+						// Update the list of curators
+						curators = new AID[result.length];
+						for (int i = 0; i < result.length; i++) {
+							curators[i] = result[i].getName();
+						}
+						// Update the current curator number
+						curatorNumber = foundCurators;
+
+						System.out.printf("Found %d curator agents\n", curatorNumber);
+					}
+				} catch (FIPAException fe) {
+                    fe.printStackTrace();
+				}
 			}
 		};
 	}
