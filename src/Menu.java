@@ -27,7 +27,7 @@ public class Menu {
 	private void choose(int choice) {
 		switch (choice) {
 			case 1:
-				agent.register();
+				agent.registerUser();
 				break;
 			case 2:
 				agent.startTour();

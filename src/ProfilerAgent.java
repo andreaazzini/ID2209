@@ -17,35 +17,18 @@ public class ProfilerAgent extends MuseumAgent {
 	private Menu menu;
 
 	protected void setup() {
+		register(this, "profiler");
 		menu = new Menu(this);
 		System.out.println("Profiler Agent " + getAID().getName() + " successfully initialized");
-
-		DFAgentDescription dfd = new DFAgentDescription(); 
-		dfd.setName(getAID());
-		ServiceDescription sd = new ServiceDescription(); 
-		sd.setType("profiler");
-		sd.setName("JADE-profiler");
-		dfd.addServices(sd);
-		try {
-			DFService.register(this, dfd); 
-		} catch (FIPAException fe) { 
-			fe.printStackTrace();
-		}
-		
 		menu.display();
 	}
 
 	protected void takeDown() {
-		try {
-			DFService.deregister(this); 
-		} catch (FIPAException fe) {
-     		fe.printStackTrace();
-		}
-
+		deregister(this);
 		System.out.println("Profiler agent " + getAID().getName() + " terminating.");
 	}
 
-	protected void register() {
+	protected void registerUser() {
 		addBehaviour(new OneShotBehaviour(this) {
 			public void action() {
 				Scanner scanner = new Scanner(System.in);

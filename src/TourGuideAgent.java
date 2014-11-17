@@ -25,17 +25,7 @@ public class TourGuideAgent extends MuseumAgent {
 		artifacts = new ArrayList<Artifact>();
 		curatorNumber = 0;
 
-		DFAgentDescription dfd = new DFAgentDescription(); 
-		dfd.setName(getAID());
-		ServiceDescription sd = new ServiceDescription(); 
-		sd.setType("tourguide");
-		sd.setName("JADE-tourguide");
-		dfd.addServices(sd);
-		try {
-			DFService.register(this, dfd); 
-		} catch (FIPAException fe) { 
-			fe.printStackTrace();
-		}
+		register(this, "tourguide");
 
 		System.out.println("Tour Guide Agent " + getAID().getName() + " successfully initialized");
 		ParallelBehaviour pb = new ParallelTourGuideBehaviour();
@@ -45,12 +35,7 @@ public class TourGuideAgent extends MuseumAgent {
 	}
 
 	protected void takeDown() {
-		try {
-			DFService.deregister(this); 
-		} catch (FIPAException fe) {
-     		fe.printStackTrace();
-		}
-
+		deregister(this);
 		System.out.println("Tour Guide agent " + getAID().getName() + " terminating.");
 	}
 

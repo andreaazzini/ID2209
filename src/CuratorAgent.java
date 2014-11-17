@@ -9,19 +9,9 @@ import src.MuseumAgent;
 
 public class CuratorAgent extends MuseumAgent {
 	protected void setup() {
-		DFAgentDescription dfd = new DFAgentDescription(); 
-		dfd.setName(getAID());
-		ServiceDescription sd = new ServiceDescription(); 
-		sd.setType("curator");
-		sd.setName("JADE-curator");
-		dfd.addServices(sd);
-		try {
-			DFService.register(this, dfd); 
-		} catch (FIPAException fe) { 
-			fe.printStackTrace();
-		}
-
+		register(this, "curator");
 		System.out.println("Curator Agent " + getAID().getName() + " successfully initialized");
+		
 		addBehaviour(new WakerBehaviour(this, 10000) {
 			boolean messageReceived = false;
 
@@ -38,12 +28,7 @@ public class CuratorAgent extends MuseumAgent {
 	}
 
 	protected void takeDown() {
-		try {
-			DFService.deregister(this); 
-		} catch (FIPAException fe) {
-     		fe.printStackTrace();
-		}
-
+		deregister(this);
 		System.out.println("Curator agent " + getAID().getName() + " terminating.");
 	}
 }
