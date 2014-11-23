@@ -2,7 +2,6 @@ package src;
 
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CompositeBehaviour;
-import jade.core.behaviours.OneShotBehaviour;
 import jade.util.leap.Collection;
 import jade.util.leap.List;
 import jade.util.leap.ArrayList;
@@ -11,23 +10,13 @@ import src.Menu;
 
 public class CommunicationBehaviour extends CompositeBehaviour {
 	private List children;
-	private int currentIndex;
+	private int step;
 	private MuseumAgent agent;
 
 	public CommunicationBehaviour(MuseumAgent agent) {
 		super(agent);
 		this.agent = agent;
 		children = new ArrayList();
-		children.add(new OneShotBehaviour(agent) {
-			public void action() {
-				System.out.println("Retrieving information...");
-			}
-		});
-		children.add(new OneShotBehaviour(agent) {
-			public void action() {
-				System.out.println("Receiving information...");
-			}
-		});
 	}
 
 	public Collection getChildren() {
@@ -35,24 +24,38 @@ public class CommunicationBehaviour extends CompositeBehaviour {
 	}
 
 	public Behaviour getCurrent() {
-		return (Behaviour) children.get(currentIndex);
+		System.out.println(step);
+		return (Behaviour) children.get(step);
 	}
 
 	protected boolean checkTermination(boolean currentDone, int currentResult) {
-		return currentIndex == children.size() - 1;
+		return currentDone && step == 2;
 	}
 
 	protected void scheduleFirst() {
-		currentIndex = 0;
+		step = 0;
 	}
 
 	protected void scheduleNext(boolean currentDone, int currentResult) {
-		currentIndex++;
+		if (currentDone) {
+			System.out.println("NEXT");
+			step++;
+		}
 	}
 
 	public int onEnd() {
-		new Menu(agent).display();
+		if (agent instanceof ProfilerAgent) {
+			new Menu(agent).display();
+		}
 
 		return 0;
+	}
+
+	public void setSendingBehaviour(Behaviour sendingBehaviour) {
+		children.add(sendingBehaviour);
+	}
+
+	public void setReceivingBehaviour(Behaviour receivingBehaviour) {
+		children.add(receivingBehaviour);
 	}
 }

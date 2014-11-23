@@ -17,7 +17,6 @@ public class Menu {
 		System.out.println("COMMAND LINE PROFILER AGENT MENU");
 		System.out.println("1) Register");
 		System.out.println("2) Start Tour");
-		System.out.println("3) Obtain interesting information");
 		System.out.println("0) Quit");
 		System.out.print("\nYour choice: ");
 		int choice = sc.nextInt();
@@ -31,9 +30,6 @@ public class Menu {
 				break;
 			case 2:
 				agent.startTour();
-				break;
-			case 3:
-				agent.obtainInfo();
 				break;
 			case 0:
 				agent.doDelete();

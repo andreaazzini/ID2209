@@ -1,24 +1,31 @@
 package src;
 
+import jade.core.AID;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.OneShotBehaviour;
-import jade.core.behaviours.TickerBehaviour;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
+import jade.lang.acl.ACLMessage;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import src.User;
 import src.Menu;
 import src.MuseumAgent;
 import src.CommunicationBehaviour;
+import src.ReceivingBehaviour;
 
 public class ProfilerAgent extends MuseumAgent {
 	private User user;
 	private Menu menu;
+	private List<AID> availableTours;
 
 	protected void setup() {
 		register(this, "profiler");
 		menu = new Menu(this);
+		availableTours = new ArrayList<AID>();
 		System.out.println("Profiler Agent " + getAID().getName() + " successfully initialized");
 		menu.display();
 	}
@@ -50,45 +57,64 @@ public class ProfilerAgent extends MuseumAgent {
 	}
 
 	protected void startTour() {
-		addBehaviour(new OneShotBehaviour(this) {
-			public void action() {
-				DFAgentDescription template = new DFAgentDescription(); 
-				ServiceDescription sd = new ServiceDescription(); 
-				sd.setType("tourguide");
-				template.addServices(sd);
-				try {
-					DFAgentDescription[] result = DFService.search(myAgent, template);
-
-					if (result.length > 0) {
-						Scanner sc = new Scanner(System.in);
-
-						System.out.println("AVAILABLE TOURS");
-						for (int i = 0; i < result.length; i++) {
-							System.out.printf("%d) %s\n", i + 1, result[i].getName());
-						}
-
-						System.out.print("Choose the tour: ");
-						int choice = sc.nextInt();
-
-						try {
-							System.out.printf("You have chosen tour %s.\n", result[choice - 1]);
-						} catch (ArrayIndexOutOfBoundsException e) {
-							System.out.println("The chosen tour does not exist");
-						}
-						
-					} else {
-						System.out.println("No tours available");
-					}
-
-					menu.display();
-				} catch (FIPAException fe) {
-		            fe.printStackTrace();
-				}
-			}
-		});
+		updateAvailableTours();
+		if (availableTours.size() > 0) {
+			addBehaviour(sendingBehaviour(availableTours));
+		} else {
+			System.out.println("No tour available");
+			menu.display();
+		}
 	}
 
-	protected void obtainInfo() {
-		addBehaviour(new CommunicationBehaviour(this));
+	private Behaviour sendingBehaviour(List<AID> availableTours) {
+		return new OneShotBehaviour(this) {
+			public void action() {
+				System.out.println("Sending message to the first available tour...");
+				ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+				message.setSender(myAgent.getAID());
+				message.addReceiver(availableTours.get(0));
+				message.setContent("start");
+				send(message);
+
+				ACLMessage msg;
+				do {
+					msg = receive();
+				} while (msg == null);
+				
+				if (msg != null) {
+					System.out.println("Received reply: " + msg.getContent() + 
+						" from " + msg.getSender());
+				
+					String[] infos = msg.getContent().split(" ");
+					if (infos[0].equals("fail")) {
+						System.out.println("Failed to receive a response");
+						menu.display();
+					} else if (infos[0].equals("info")) {
+						System.out.println("Information acquired");
+						menu.display();
+					}
+				}
+			}
+		};
+	}
+
+	private void updateAvailableTours() {
+		DFAgentDescription template = new DFAgentDescription(); 
+		ServiceDescription sd = new ServiceDescription(); 
+		sd.setType("tourguide");
+		template.addServices(sd);
+		try {
+			DFAgentDescription[] result = DFService.search(this, template);
+
+			for (int i = 0; i < result.length; i++) {
+				availableTours.add(result[i].getName());
+			}
+		} catch (FIPAException fe) {
+            fe.printStackTrace();
+		}
+	}
+
+	protected Menu getMenu() {
+		return menu;
 	}
 }
