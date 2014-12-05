@@ -1,6 +1,7 @@
 package src;
 
 import jade.core.AID;
+import jade.core.Location;
 import jade.core.behaviours.Behaviour;
 import jade.domain.FIPANames.InteractionProtocol;
 import jade.lang.acl.ACLMessage;
@@ -13,9 +14,11 @@ public class DutchAuctioneerBehaviour extends Behaviour {
 	private int price;
 	private boolean proposalAccepted;
 	private boolean participantsInformed;
+	private Location home;
 
-	public DutchAuctioneerBehaviour(List<AID> participants, int initialPrice) {
+	public DutchAuctioneerBehaviour(List<AID> participants, int initialPrice, Location home) {
 		super();
+		this.home = home;
 		price = initialPrice;
 		proposalAccepted = false;
 		participantsInformed = false;
@@ -36,6 +39,7 @@ public class DutchAuctioneerBehaviour extends Behaviour {
 			informStartAuction.setProtocol(InteractionProtocol.FIPA_DUTCH_AUCTION);
 			myAgent.send(informStartAuction);
 			participantsInformed = true;
+			myAgent.doWait(3000);
 		}
 
 		ACLMessage cfp = new ACLMessage(ACLMessage.CFP);
@@ -60,11 +64,25 @@ public class DutchAuctioneerBehaviour extends Behaviour {
 		    	accept.setProtocol(InteractionProtocol.FIPA_DUTCH_AUCTION);
 		    	myAgent.send(accept);
 		    	proposalAccepted = true;
+
+		    	ACLMessage auctionOver = new ACLMessage(ACLMessage.INFORM);
+			    auctionOver.setSender(myAgent.getAID());
+			    for (AID p : participants) {
+					auctionOver.addReceiver(p);
+				}
+				auctionOver.setContent("auction-over");
+				myAgent.send(auctionOver);
+				break;
 		    }
 		}
 	}
 
 	public boolean done() {
 		return proposalAccepted;
+	}
+
+	public int onEnd() {
+		myAgent.doMove(home);
+		return 0;
 	}
 }
